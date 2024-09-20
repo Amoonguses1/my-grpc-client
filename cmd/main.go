@@ -22,6 +22,24 @@ func main() {
 
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// opts = append(opts,
+	// 	grpc.WithUnaryInterceptor(
+	// 		grpc_retry.UnaryClientInterceptor(
+	// 			grpc_retry.WithCodes(codes.Unknown, codes.Internal),
+	// 			grpc_retry.WithMax(4),
+	// 			grpc_retry.WithBackoff(grpc_retry.BackoffExponential(2*time.Second)),
+	// 		),
+	// 	),
+	// )
+	// opts = append(opts,
+	// 	grpc.WithStreamInterceptor(
+	// 		grpc_retry.StreamClientInterceptor(
+	// 			grpc_retry.WithCodes(codes.Unknown, codes.Internal),
+	// 			grpc_retry.WithMax(4),
+	// 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(3*time.Second)),
+	// 		),
+	// 	),
+	// )
 
 	conn, err := grpc.Dial("localhost:9090", opts...)
 	if err != nil {
@@ -55,8 +73,11 @@ func main() {
 	// runUnaryResiliencyWithTimeout(resiliencyAdaptor, 2, 8, []uint32{dresl.OK}, 5*time.Second)
 	// runServerStreamingResiliencyWithTimeout(resiliencyAdaptor, 0, 3, []uint32{dresl.OK}, 15*time.Second)
 	// runClientStreamingResiliencyWithTimeout(resiliencyAdaptor, 0, 3, []uint32{dresl.OK}, 10, 10*time.Second)
-	runBiDirectionalResiliencyWithTimeout(resiliencyAdaptor, 0, 3, []uint32{dresl.OK}, 10, 10*time.Second)
-
+	// runBiDirectionalResiliencyWithTimeout(resiliencyAdaptor, 0, 3, []uint32{dresl.OK}, 10, 10*time.Second)
+	// runUnaryResiliency(resiliencyAdaptor, 0, 3, []uint32{dresl.UNKNOWN, dresl.OK})
+	// runServerStreamingResiliency(resiliencyAdaptor, 0, 3, []uint32{dresl.UNKNOWN, dresl.OK})
+	// runClientStreamingResiliency(resiliencyAdaptor, 0, 3, []uint32{dresl.UNKNOWN}, 10)
+	runBiDirectionalResiliency(resiliencyAdaptor, 0, 3, []uint32{dresl.UNKNOWN}, 10)
 }
 
 func runSayHello(adaptor *hello.HelloAdaptor, name string) {
@@ -170,4 +191,34 @@ func runBiDirectionalResiliencyWithTimeout(adaptor *resiliency.ResiliencyAdaptor
 	ctx, _ := context.WithTimeout(context.Background(), timeout)
 
 	adaptor.BiDirectionalResiliency(ctx, minDelaySecond, maxDelaySecond, statusCodes, count)
+}
+
+func runUnaryResiliency(adaptor *resiliency.ResiliencyAdaptor, minDelaySecond int32,
+	maxDelaySecond int32, statusCodes []uint32) {
+	res, err := adaptor.UnaryResiliency(context.Background(), minDelaySecond, maxDelaySecond, statusCodes)
+
+	if err != nil {
+		log.Fatalln("Failed to call UnaryResiliency :", err)
+	}
+
+	log.Println(res.DummyString)
+}
+
+func runServerStreamingResiliency(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32) {
+	adaptor.ServerStreamingResiliency(context.Background(), minDelaySecond, maxDelaySecond, statusCodes)
+}
+
+func runClientStreamingResiliency(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32,
+	count int) {
+	adaptor.ClientStreamingResiliency(context.Background(), minDelaySecond,
+		maxDelaySecond, statusCodes, count)
+}
+
+func runBiDirectionalResiliency(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32,
+	count int) {
+	adaptor.BiDirectionalResiliency(context.Background(), minDelaySecond,
+		maxDelaySecond, statusCodes, count)
 }
