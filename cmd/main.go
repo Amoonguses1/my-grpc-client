@@ -102,10 +102,14 @@ func main() {
 	// runServerStreamingResiliency(resiliencyAdaptor, 0, 3, []uint32{dresl.UNKNOWN, dresl.OK})
 	// runClientStreamingResiliency(resiliencyAdaptor, 0, 3, []uint32{dresl.UNKNOWN}, 10)
 	// runBiDirectionalResiliency(resiliencyAdaptor, 0, 3, []uint32{dresl.UNKNOWN}, 10)
-	for i := 0; i < 300; i++ {
-		runUnaryResiliencyWithCircuitBreaker(resiliencyAdaptor, 0, 0, []uint32{dresl.UNKNOWN, dresl.OK})
-		time.Sleep(time.Second)
-	}
+	// for i := 0; i < 300; i++ {
+	// 	runUnaryResiliencyWithCircuitBreaker(resiliencyAdaptor, 0, 0, []uint32{dresl.UNKNOWN, dresl.OK})
+	// 	time.Sleep(time.Second)
+	// }
+	// runUnaryResiliencyWithMetadata(resiliencyAdaptor, 6, 10, []uint32{dresl.OK})
+	// runServerStreamingResiliencyWithMetadata(resiliencyAdaptor, 1, 3, []uint32{dresl.OK})
+	// runClientStreamingResiliencyWithMetadata(resiliencyAdaptor, 0, 1, []uint32{dresl.OK}, 10)
+	runBiDirectionalResiliencyWithMetadata(resiliencyAdaptor, 0, 1, []uint32{dresl.OK}, 10)
 }
 
 func runSayHello(adaptor *hello.HelloAdaptor, name string) {
@@ -263,4 +267,36 @@ func runUnaryResiliencyWithCircuitBreaker(adaptor *resiliency.ResiliencyAdaptor,
 	} else {
 		log.Println(cbreakerRes.(*resl_proto.ResiliencyResponse).DummyString)
 	}
+}
+
+func runUnaryResiliencyWithMetadata(adaptor *resiliency.ResiliencyAdaptor, minDelaySecond int32,
+	maxDelaySecond int32, statusCodes []uint32) {
+	res, err := adaptor.UnaryResiliencyWithMetadata(context.Background(),
+		minDelaySecond, maxDelaySecond, statusCodes)
+
+	if err != nil {
+		log.Fatalln("Failed to call UnaryResiliencyWithMetadata :", err)
+	}
+
+	log.Println(res.DummyString)
+}
+
+func runServerStreamingResiliencyWithMetadata(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32) {
+	adaptor.ServerStreamingResiliencyWithMetadata(context.Background(), minDelaySecond,
+		maxDelaySecond, statusCodes)
+}
+
+func runClientStreamingResiliencyWithMetadata(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32,
+	count int) {
+	adaptor.ClientStreamingResiliencyWithMetadata(context.Background(), minDelaySecond,
+		maxDelaySecond, statusCodes, count)
+}
+
+func runBiDirectionalResiliencyWithMetadata(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32,
+	count int) {
+	adaptor.BiDirectionalResiliencyWithMetadata(context.Background(), minDelaySecond,
+		maxDelaySecond, statusCodes, count)
 }

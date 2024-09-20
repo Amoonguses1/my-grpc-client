@@ -3,7 +3,8 @@ module github.com/amoonguses1/my-grpc-client
 go 1.22.5
 
 require (
-	github.com/amoonguses1/grpc-proto-study v0.0.7
+	github.com/amoonguses1/grpc-proto-study v0.0.8
+	github.com/google/uuid v1.6.0
 	github.com/sony/gobreaker v1.0.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/grpc v1.67.0
