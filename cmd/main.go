@@ -13,6 +13,7 @@ import (
 	"github.com/amoonguses1/my-grpc-client/internal/adaptor/resiliency"
 	dbank "github.com/amoonguses1/my-grpc-client/internal/application/domain/bank"
 	dresl "github.com/amoonguses1/my-grpc-client/internal/application/domain/resiliency"
+	"github.com/amoonguses1/my-grpc-client/internal/interceptor"
 	"github.com/sony/gobreaker"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -64,6 +65,20 @@ func main() {
 	// 		),
 	// 	),
 	// )
+	opts = append(opts,
+		grpc.WithChainUnaryInterceptor(
+			interceptor.LogUnaryClientInterceptor(),
+			interceptor.BasicUnaryClientInterceptor(),
+			interceptor.TimeoutUnaryClientInterceptor(5*time.Second),
+		),
+	)
+	opts = append(opts,
+		grpc.WithChainStreamInterceptor(
+			interceptor.LogStreamClientInterceptor(),
+			interceptor.BasicClientStreamInterceptor(),
+			interceptor.TimeoutStreamClientInterceptor(15*time.Second),
+		),
+	)
 
 	conn, err := grpc.Dial("localhost:9090", opts...)
 	if err != nil {
@@ -106,10 +121,10 @@ func main() {
 	// 	runUnaryResiliencyWithCircuitBreaker(resiliencyAdaptor, 0, 0, []uint32{dresl.UNKNOWN, dresl.OK})
 	// 	time.Sleep(time.Second)
 	// }
-	// runUnaryResiliencyWithMetadata(resiliencyAdaptor, 6, 10, []uint32{dresl.OK})
+	runUnaryResiliencyWithMetadata(resiliencyAdaptor, 6, 10, []uint32{dresl.OK})
 	// runServerStreamingResiliencyWithMetadata(resiliencyAdaptor, 1, 3, []uint32{dresl.OK})
 	// runClientStreamingResiliencyWithMetadata(resiliencyAdaptor, 0, 1, []uint32{dresl.OK}, 10)
-	runBiDirectionalResiliencyWithMetadata(resiliencyAdaptor, 0, 1, []uint32{dresl.OK}, 10)
+	// runBiDirectionalResiliencyWithMetadata(resiliencyAdaptor, 0, 1, []uint32{dresl.OK}, 10)
 }
 
 func runSayHello(adaptor *hello.HelloAdaptor, name string) {
