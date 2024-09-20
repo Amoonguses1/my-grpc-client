@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"time"
 
 	"github.com/amoonguses1/my-grpc-client/internal/adaptor/bank"
 	"github.com/amoonguses1/my-grpc-client/internal/adaptor/hello"
+	"github.com/amoonguses1/my-grpc-client/internal/adaptor/resiliency"
 	dbank "github.com/amoonguses1/my-grpc-client/internal/application/domain/bank"
+	dresl "github.com/amoonguses1/my-grpc-client/internal/application/domain/resiliency"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -31,9 +34,14 @@ func main() {
 	// 	log.Fatalln("Can not create HelloAdaptor :", err)
 	// }
 
-	bankAdaptor, err := bank.NewBankAdapter(conn)
+	// bankAdaptor, err := bank.NewBankAdapter(conn)
+	// if err != nil {
+	// 	log.Fatalln("Can not create BankAdaptor :", err)
+	// }
+
+	resiliencyAdaptor, err := resiliency.NewResiliencyAdaptor(conn)
 	if err != nil {
-		log.Fatalln("Can not create BankAdapter :", err)
+		log.Fatalln("Can not create resiliencyAdaptor :", err)
 	}
 
 	// runSayHello(helloAdaptor, "my name")
@@ -43,7 +51,12 @@ func main() {
 	// runGetCurrentBalance(bankAdaptor, "7835697001xxxxx")
 	// runFetchExchangeRates(bankAdaptor, "USD", "JPN")
 	// runSummarizeTransactions(bankAdaptor, "7835697002yyyyy", 10)
-	runTransferMultiple(bankAdaptor, "7835697004", "7835697003", 200)
+	// runTransferMultiple(bankAdaptor, "7835697004", "7835697003", 200)
+	// runUnaryResiliencyWithTimeout(resiliencyAdaptor, 2, 8, []uint32{dresl.OK}, 5*time.Second)
+	// runServerStreamingResiliencyWithTimeout(resiliencyAdaptor, 0, 3, []uint32{dresl.OK}, 15*time.Second)
+	// runClientStreamingResiliencyWithTimeout(resiliencyAdaptor, 0, 3, []uint32{dresl.OK}, 10, 10*time.Second)
+	runBiDirectionalResiliencyWithTimeout(resiliencyAdaptor, 0, 3, []uint32{dresl.OK}, 10, 10*time.Second)
+
 }
 
 func runSayHello(adaptor *hello.HelloAdaptor, name string) {
@@ -119,4 +132,42 @@ func runTransferMultiple(adaptor *bank.BankAdapter, fromAcct string, toAcct stri
 	}
 
 	adaptor.TransferMultiple(context.Background(), trf)
+}
+
+func runUnaryResiliencyWithTimeout(adaptor *resiliency.ResiliencyAdaptor, minDelaySecond int32,
+	maxDelaySecond int32, statusCodes []uint32, timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+	defer cancel()
+
+	res, err := adaptor.UnaryResiliency(ctx, minDelaySecond, maxDelaySecond, statusCodes)
+
+	if err != nil {
+		log.Fatalln("Failed to call UnaryResiliency :", err)
+	}
+
+	log.Println(res.DummyString)
+}
+
+func runServerStreamingResiliencyWithTimeout(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32, timeout time.Duration) {
+	ctx, _ := context.WithTimeout(context.Background(), timeout)
+
+	adaptor.ServerStreamingResiliency(ctx, minDelaySecond, maxDelaySecond, statusCodes)
+}
+
+func runClientStreamingResiliencyWithTimeout(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32,
+	count int, timeout time.Duration) {
+	ctx, _ := context.WithTimeout(context.Background(), timeout)
+
+	adaptor.ClientStreamingResiliency(ctx, minDelaySecond, maxDelaySecond, statusCodes, count)
+}
+
+func runBiDirectionalResiliencyWithTimeout(adaptor *resiliency.ResiliencyAdaptor,
+	minDelaySecond int32, maxDelaySecond int32, statusCodes []uint32,
+	count int, timeout time.Duration) {
+	ctx, _ := context.WithTimeout(context.Background(), timeout)
+
+	adaptor.BiDirectionalResiliency(ctx, minDelaySecond, maxDelaySecond, statusCodes, count)
 }
