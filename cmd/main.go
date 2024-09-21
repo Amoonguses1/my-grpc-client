@@ -16,7 +16,7 @@ import (
 	"github.com/amoonguses1/my-grpc-client/internal/interceptor"
 	"github.com/sony/gobreaker"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 var cbreaker *gobreaker.CircuitBreaker
@@ -46,7 +46,14 @@ func main() {
 	log.SetOutput(logWriter{})
 
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	creds, err := credentials.NewClientTLSFromFile("ssl/ca.crt", "")
+	if err != nil {
+		log.Fatalln("Can't create client credentials :", err)
+	}
+
+	opts = append(opts, grpc.WithTransportCredentials(creds))
+	// opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	// opts = append(opts,
 	// 	grpc.WithUnaryInterceptor(
 	// 		grpc_retry.UnaryClientInterceptor(
